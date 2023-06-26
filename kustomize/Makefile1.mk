@@ -12,7 +12,16 @@ BUILD_DATE_STRIPPED := $(subst -,,$(subst :,,$(BUILD_DATE)))
 
 #----------------------#
 .PHONY: build
+ifeq ($(FIPS_ENABLE),yes)
+build: build-linux-fips
+else
 build: build-linux build-mac build-windows
+endif
+
+.PHONY: build-linux-fips
+build-linux-fips: 
+	GOARCH=amd64 CGO_ENABLED=1 GOEXPERIMENT=boringcrypto GOOS=linux go build -v --ldflags="-w -s -linkmode=external -extldflags "-static" -X 'sigs.k8s.io/kustomize/api/provenance.version=$(VERSION)' -X sigs.k8s.io/kustomize/api/provenance.buildDate=$(BUILD_DATE) -X sigs.k8s.io/kustomize/api/provenance.gitCommit=$(GIT_COMMIT)" \
+		-o bin/linux/amd64/ $(PKG)
 
 .PHONY: build-linux
 build-linux: build-linux-amd64 build-linux-arm64 build-linux-arm-v7 build-linux-s390x build-linux-ppc64le
